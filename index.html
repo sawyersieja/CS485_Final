@@ -290,17 +290,41 @@
                 }
 
                 did_i_hit_a_sprite(){
+    
                     var num_of_sprites = mysprites.length; //Gets the number of sprites from the array
                     
-                    //position starts at the top left of the image
-                    var center_x = this.position.x + (this.cur_frame_w/2); // This gets the center of the sprite width
-                    var center_y = this.position.y + (this.cur_frame_h/2); // This gets the center of the sprite height
-                    var radius = Math.sqrt((this.cur_frame_w ** 2) + (this.cur_frame_h ** 2) ) // Is this radius or diameter? It's the hypotenuse.
-                    for( var i = 0 ; i< num_of_sprites; i++){
-                        if(mysprites[i] != this){                        
-                            var i_center_x = mysprites[i].x_location + (mysprites[i].cur_frame_w/2);
-                            var i_center_y = mysprites[i].y_location + (mysprites[i].cur_frame_h/2);
-                            if(Math.sqrt( ((i_center_x - center_x) ** 2) + ((i_center_y - center_y) **2) ) <= radius){
+                    //this.sprite position starts at the top left of the image I think
+                    var center_x = this.position.x + (this.cur_frame_w)/2; // This gets the adjusted x position of the sprite
+                    var center_y = this.position.y + (this.cur_frame_h)/2; // This gets the adjusted y position of the sprite
+                    //a^2 + b^2 = c^2. Shouldn't this value be halved?
+                    var radius = Math.sqrt((this.cur_frame_w ** 2) + (this.cur_frame_h ** 2)) // Cross-sectional of the halved x&y(aka radius).
+        
+                    for( var i = 0 ; i < num_of_sprites; i++){
+        
+                        //This if basically means every other sprite but this one
+                        if(mysprites[i] != this){                
+                            //indexed_sprite_center_x = x_location or position.x?
+                            //definitely not x_location
+                                
+                            var i_center_x = mysprites[i].position.x + (mysprites[i].cur_frame_w/2); //This gets the indexed sprites adjusted x
+                            var i_center_y = mysprites[i].position.y + (mysprites[i].cur_frame_h/2); //This gets the indexed sprites adjusted y
+
+
+                            /*
+                            Basically at this point, we want to say, if a sprite's position enters the radius of another sprites position...
+                            then a collision has occured
+
+                            Think of it as a hitbox collision. Hit boxes should not overlap, but they should be able to 'bump'.
+                            So we need to calculate a hitbox.
+
+                            Earlier, we got the minimum radius required for a penguin's hitbox from the center point for that particular sprite,
+                            but haven't done anything with it. The radius is a length value, not a position value.
+                            I think the prof is treating the radius like a position value rather than a length value.
+                            We need to perform a calculation with it.
+                            
+                            */
+                            //if (x1 - x2)^2 + (y1 - y2)^2
+                            if((Math.sqrt( ((i_center_x - center_x) ** 2) + ((i_center_y - center_y) **2) )) <= radius){
                                 this.on_sprite_collision(mysprites[i])
                                 console.log("Collision occured.");
                             }
