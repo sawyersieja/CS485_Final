@@ -285,7 +285,6 @@
                 } 
 
                 on_sprite_collision(sprite){
-                    console.log("Entered collision.");
                     do_i_need_to_redraw = true;
                 }
 
@@ -303,30 +302,16 @@
         
                         //This if basically means every other sprite but this one
                         if(mysprites[i] != this){                
-                            //indexed_sprite_center_x = x_location or position.x?
-                            //definitely not x_location
-                                
+
+                            //indexed_sprite_center_x = position.x + half_sprite_width
+                            //indexed_sprite_center_y = position.y + half_sprite_height
                             var i_center_x = mysprites[i].position.x + (mysprites[i].cur_frame_w/2); //This gets the indexed sprites adjusted x
                             var i_center_y = mysprites[i].position.y + (mysprites[i].cur_frame_h/2); //This gets the indexed sprites adjusted y
 
-
-                            /*
-                            Basically at this point, we want to say, if a sprite's position enters the radius of another sprites position...
-                            then a collision has occured
-
-                            Think of it as a hitbox collision. Hit boxes should not overlap, but they should be able to 'bump'.
-                            So we need to calculate a hitbox.
-
-                            Earlier, we got the minimum radius required for a penguin's hitbox from the center point for that particular sprite,
-                            but haven't done anything with it. The radius is a length value, not a position value.
-                            I think the prof is treating the radius like a position value rather than a length value.
-                            We need to perform a calculation with it.
-                            
-                            */
-                            //if (x1 - x2)^2 + (y1 - y2)^2
+                            //if (indexed_adjusted_x - adjusted_sprite_x)^2 + (indexed_adjusted_y - adjusted_sprite_y)^2 <= radius
+                            //TL;DR radius length should not be equal to or less than distance from center of 1 sprite to center of another sprite
                             if((Math.sqrt( ((i_center_x - center_x) ** 2) + ((i_center_y - center_y) **2) )) <= radius){
                                 this.on_sprite_collision(mysprites[i])
-                                console.log("Collision occured.");
                             }
                         }
                     }
