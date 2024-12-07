@@ -288,11 +288,21 @@
         
                 } 
 
+                isOverlapping(rock) {
+                    const rockCenter = createVector(rock.position.x + rock.cur_frame_w / 2, rock.position.y + rock.cur_frame_h / 2);
+                    const penguinCenter = createVector(this.position.x + this.cur_frame_w / 2, this.position.y + this.cur_frame_h / 2);
+                    const distance = p5.Vector.dist(penguinCenter, rockCenter);
+                    const minDistance = (Math.min(this.cur_frame_w, this.cur_frame_h) + Math.min(rock.cur_frame_w, rock.cur_frame_h)) / 2;
+                    return distance < minDistance;
+                }
+
+
                 on_sprite_collision(sprite){
+                    
                     if(sprite instanceof Rock) {
-                        this.velocity.mult(-1);
-                        this.position.add(this.velocity);
+                        this.avoidRocks(sprite); 
                     }
+                
                     do_i_need_to_redraw = true;
                 }
 
@@ -323,11 +333,17 @@
                             }
                         }
                     }
-                        
                 }
 
                 update(){
                     this.set_direction_by_vel();
+
+                    for(let sprite of mysprites) {
+                        if(sprite instanceof Rock && this.isOverlapping(sprite)) {
+                            this.avoidRocks(sprite);
+                        }
+                    }
+
                     this.position.add(this.velocity);
                     this.velocity.add(this.acceleration);
                     this.velocity.limit(this.maxSpeed);
@@ -514,12 +530,16 @@
                 constructor(jsonfile, x, y, sprite_name){
                     super(jsonfile, x, y, sprite_name);
                     this.scale = 1.0;
-                    this.velocity = createVector(0, 0);
-                    this.acceleration = createVector(0, 0);
                 }
                 
+                update(){
+                    return;
+                }
+
                 run(){
                     this.draw_or_load_the_damn_thing();
+
+                    
                 }
             }
             
@@ -542,6 +562,34 @@
                 run(){
                 super.run();
                 }
+
+                avoidRocks(rock) {
+                    const rockCenter = createVector(rock.position.x + rock.cur_frame_w / 2, rock.position.y + rock.cur_frame_h / 2);
+                    const penguinCenter = createVector(this.position.x + this.cur_frame_w / 2, this.position.y + this.cur_frame_h / 2);
+
+                    const distance = p5.Vector.dist(penguinCenter, rockCenter);
+                    const minDistance = (Math.min(this.cur_frame_w, this.cur_frame_h) + Math.min(rock.cur_frame_w, rock.cur_frame_h)) / 2;
+
+                    // If penguin is inside the rock's hitbox, enforce collision
+                    if (distance < minDistance) {
+                        let overlap = minDistance - distance;
+                        let correction = p5.Vector.sub(penguinCenter, rockCenter);
+                        correction.setMag(overlap + 1); // Add a small buffer to fully resolve overlap
+                        this.position.add(correction);
+
+                        // Redirect velocity completely away from the rock
+                        let bounce = p5.Vector.sub(penguinCenter, rockCenter).normalize();
+                        this.velocity = bounce.mult(this.maxSpeed * 0.7); // Apply bounce with a dampening factor
+                    } else if (distance < minDistance + 100) {
+                        // Gradual steering when approaching rock
+                        let diff = p5.Vector.sub(penguinCenter, rockCenter);
+                        let steerStrength = map(distance, minDistance, minDistance + 100, this.maxForce, 0);
+                        diff.setMag(steerStrength);
+                        this.acceleration.add(diff);
+                    }
+                }
+
+
                 on_bound_hit_north(){
                     super.on_bound_hit_north();
                     this.set_direction(this.getDirection());
