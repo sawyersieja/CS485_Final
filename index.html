@@ -57,8 +57,8 @@
                 constructor(jsonfile, x, y, sprite_name) {
                     
                     this.position = createVector(x,y);
-                    this.velocity = p5.Vector.random2D();
-                    this.velocity.setMag(random(5,20));
+                    this.velocity = p5.Vector.random2D(); //Creates a new 2D unit vector with a random heading.
+                    this.velocity.setMag(Math.floor(random(5,20))); //setMag() sets a vector's magnitude in this case to a random value between 5 and 20.
                     
                     this.maxSpeed = 40;
                     this.maxForce = 5;
@@ -182,18 +182,22 @@
                 }
             
                 on_bound_hit_north(){
-                    this.velocity.y = this.velocity.y * -1;      
+                    this.velocity.y = this.velocity.y * -1; 
+                    this.position.y = 1; //update position so penguins don't get stuck on bounds
                 }
             
                 on_bound_hit_south(){
-                    this.velocity.y= this.velocity.y * -1; 
+                    this.velocity.y= this.velocity.y * -1;
+                    this.position.y = window.innerHeight - this.cur_frame_h - 1; //update position so penguins dont get stuck on bounds
                 }
 
                 on_bound_hit_east(){
                     this.velocity.x = this.velocity.x * -1; 
+                    this.position.x = window.innerWidth - this.cur_frame_w - 1; //update position so penguins dont get stuck on bounds
                 }
                 on_bound_hit_west(){
                     this.velocity.x = this.velocity.x * -1;
+                    this.position.x = 1; //update position so penguins dont get stuck on bounds
                 }
 
                 set_direction( direction){
@@ -331,8 +335,16 @@
                     let cohesion = this.cohesion(boids);
                     let separation = this.separation(boids);
                 
+                    //Makes penguins steer in similar direction
+                    //initial value .4
                     alignment.mult(.4);
+
+                    //Makes penguins steer towards center of nearby group
+                    //initial value .5
                     cohesion.mult(.5);
+                
+                    //"safe space" aka "repulsion" aka "get away from me"
+                    //initial value .2
                     separation.mult(.2);
                 
                     this.acceleration.add(alignment);
