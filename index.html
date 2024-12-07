@@ -337,7 +337,7 @@
                 
                     //Makes penguins steer in similar direction
                     //initial value .4
-                    alignment.mult(.4);
+                    alignment.mult(.5);
 
                     //Makes penguins steer towards center of nearby group
                     //initial value .5
@@ -345,7 +345,7 @@
                 
                     //"safe space" aka "repulsion" aka "get away from me"
                     //initial value .2
-                    separation.mult(.2);
+                    separation.mult(.5);
                 
                     this.acceleration.add(alignment);
                     this.acceleration.add(cohesion);
@@ -595,7 +595,7 @@
             north_background_img.src = "imgs/north.png"           
 
             // mysprites.push( new Key_Control_Sprite("imgs/Penguins/animationData.json", 300, 300, 'TenderBud'));
-                for(i = 0; i < 20; ++i){
+                for(i = 0; i < 30; ++i){
 
                 mysprites.push( new Bouncy("imgs/Penguins/animationData.json", random(window.innerWidth), 
                     random(window.innerHeight), 'TenderBud'));
