@@ -289,6 +289,10 @@
                 } 
 
                 on_sprite_collision(sprite){
+                    if(sprite instanceof Rock) {
+                        this.velocity.mult(-1);
+                        this.position.add(this.velocity);
+                    }
                     do_i_need_to_redraw = true;
                 }
 
@@ -331,9 +335,12 @@
                 }
 
                 flock(boids) {
-                    let alignment = this.align(boids);
-                    let cohesion = this.cohesion(boids);
-                    let separation = this.separation(boids);
+
+                    let penguins = boids.filter((boid) => boid instanceof Bouncy);
+
+                    let alignment = this.align(penguins);
+                    let cohesion = this.cohesion(penguins);
+                    let separation = this.separation(penguins);
                 
                     //Makes penguins steer in similar direction
                     //initial value .4
@@ -502,6 +509,19 @@
                 }
 
             }
+
+            class Rock extends Sprite{
+                constructor(jsonfile, x, y, sprite_name){
+                    super(jsonfile, x, y, sprite_name);
+                    this.scale = 1.0;
+                    this.velocity = createVector(0, 0);
+                    this.acceleration = createVector(0, 0);
+                }
+                
+                run(){
+                    this.draw_or_load_the_damn_thing();
+                }
+            }
             
             class Bouncy extends Sprite{
                 constructor(jsonfile, x, y, sprite_name){
@@ -592,14 +612,17 @@
             background_img.src = "imgs/m_back.png"
 
             north_background_img = new Image();
-            north_background_img.src = "imgs/north.png"           
+            north_background_img.src = "imgs/north.png"  
 
             // mysprites.push( new Key_Control_Sprite("imgs/Penguins/animationData.json", 300, 300, 'TenderBud'));
                 for(i = 0; i < 30; ++i){
 
                 mysprites.push( new Bouncy("imgs/Penguins/animationData.json", random(window.innerWidth), 
                     random(window.innerHeight), 'TenderBud'));
-                } 
+                }
+                mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
+                mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
+                console.log("Rock info: " + mysprites[30].position.x + ", " + mysprites[30].position.y + ", Name: " + mysprites[30].sprite_name + ", cur Action: " + mysprites[30].cur_action + ", last Action: " + mysprites[30].last_action);
                 last_run_loop = Date.now();
                 requestAnimationFrame(run_loop);
 
