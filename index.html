@@ -115,8 +115,8 @@
                     var c = document.getElementById("main_canvas");
                     var ctx = c.getContext("2d");
             
-                /*   For some reason code works without this and it even gets rid of glitches when hitting bound
-                     of screen
+                /*   For some reason code works without this and it even gets rid of glitches when
+                     hitting bound of screen
 
                     try {
                         ctx.putImageData(this.clipboard, this.position.x - this.acceleration[0] ,
@@ -630,14 +630,32 @@
                 }
                 on_sprite_collision(sprite){
                     if(sprite instanceof Bouncy) {
-                        this.eatPenguins(sprite);    
+                        this.eatPenguins(sprite); 
                     }
                     super.on_sprite_collision(sprite);
                 }
 
                 eatPenguins(penguin){
-                    let i = mysprites.indexOf(penguin) //finding index of penguin to delete from mySprites
-                    mysprites.splice(i, 1)
+                    const penguinCenter = createVector(penguin.position.x + penguin.cur_frame_w / 2, penguin.position.y + penguin.cur_frame_h / 2);
+                    const predCenter = createVector(this.position.x + this.cur_frame_w / 2, this.position.y + this.cur_frame_h / 2);
+                    const distance = p5.Vector.dist(predCenter, penguinCenter);
+                    const minDistance = (Math.min(this.cur_frame_w, this.cur_frame_h) + Math.min(penguin.cur_frame_w, penguin.cur_frame_h)) / 2;
+
+                    // If penguin is inside the rock's hitbox, enforce collision
+                    if (distance < minDistance) {
+                        let i = mysprites.indexOf(penguin) //finding index of penguin to delete from mySprites
+                        mysprites.splice(i, 1)
+                        
+                        /*
+                            These 3 lines make the dog stop after eating a penguin. 
+                            It will start moving again if it senses a penguin nearby but usually penguins come to dog
+                            It looks like dog is barking to penguins to come to be eaten. 
+                            Could use some improvement since dog doesn't move as fast after.
+                        */
+                        this.velocity.x  = 0;
+                        this.velocity.y = 0
+                        this.direction = 'Idle'
+                    }          
                 }
 
                 on_bound_hit_north(){
@@ -715,15 +733,17 @@
             north_background_img.src = "imgs/north.png"  
 
             //mysprites.push( new Key_Control_Sprite("imgs/Penguins/animationData.json", 300, 300, 'TenderBud'));  
-            for(i = 1; i < 10; i++){
+            for(i = 0; i < 50; i++){
                 mysprites.push( new Bouncy("imgs/Penguins/animationData.json", random(window.innerWidth), 
                     random(window.innerHeight), 'TenderBud', i));
             }
            
             mysprites.push( new Predator("imgs/Dog/animationData.json", random(window.innerWidth), random(window.innerHeight), 'NotSoTenderBud'));    
-            mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
-            mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
-
+            
+            for(i = 0; i < 5; i++){
+                mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
+            }
+                
                
                 //  console.log("Rock info: " + mysprites[30].position.x + ", " + mysprites[30].position.y + ", Name: " + mysprites[30].sprite_name + ", cur Action: " + mysprites[30].cur_action + ", last Action: " + mysprites[30].last_action);
                 last_run_loop = Date.now();
