@@ -115,19 +115,23 @@
                     var c = document.getElementById("main_canvas");
                     var ctx = c.getContext("2d");
             
-                   
+                /*   For some reason code works without this and it even gets rid of glitches when hitting bound
+                     of screen
+
                     try {
-                        ctx.putImageData(this.clipboard, this.x_location - this.acceleration[0] ,
-                            this.y_location - this.acceleration[1]);
+                        ctx.putImageData(this.clipboard, this.position.x - this.acceleration[0] ,
+                            this.position.y - this.acceleration[1]);
                     }catch(error){                        
                     }
                     try{
-                        this.clipboard = ctx.getImageData(this.x_location, this.y_location,
+                        console.log(this.x_location, " ", this.y_location, " ",(action["meta"][frame]['w'] + 1)  * this.scale ," ",(action["meta"][frame]['h'] +1) * this.scale)
+                        this.clipboard = ctx.getImageData(this.position.x, this.position.y, 
                             (action["meta"][frame]['w'] + 1)  * this.scale, (action["meta"][frame]['h'] +1) * this.scale);
                         
                         }catch(error){
                             console.log(error)
                     }
+                */            
                     try {
                         ctx.drawImage(action["imgs"][frame], this.position.x, this.position.y, 
                             action["meta"][frame]['w'] * this.scale, action["meta"][frame]['h'] * this.scale);
@@ -299,11 +303,10 @@
 
                 on_sprite_collision(sprite){
                     
-                    if(sprite instanceof Rock || sprite instanceof Predator) {
+                    if(sprite instanceof Rock) {
                         this.avoidRocks(sprite); 
                     }
-                
-                    do_i_need_to_redraw = true;
+                    do_i_need_to_redraw = true
                 }
 
                 did_i_hit_a_sprite(){
@@ -337,13 +340,11 @@
 
                 update(){
                     this.set_direction_by_vel();
-
                     for(let sprite of mysprites) {
                         if(sprite instanceof Rock && this.isOverlapping(sprite)) {
                             this.avoidRocks(sprite);
                         }
                     }
-
                     this.position.add(this.velocity);
                     this.velocity.add(this.acceleration);
                     this.velocity.limit(this.maxSpeed);
@@ -455,6 +456,31 @@
                     return steering;
                 }
 
+                
+                // Function was moved to sprite since both predator and bouncy implement the same code. 
+                avoidRocks(rock) {
+                    const rockCenter = createVector(rock.position.x + rock.cur_frame_w / 2, rock.position.y + rock.cur_frame_h / 2);
+                    const penguinCenter = createVector(this.position.x + this.cur_frame_w / 2, this.position.y + this.cur_frame_h / 2);
+
+                    const distance = p5.Vector.dist(penguinCenter, rockCenter);
+                    const minDistance = (Math.min(this.cur_frame_w, this.cur_frame_h) + Math.min(rock.cur_frame_w, rock.cur_frame_h)) / 2;
+
+                    // If penguin is inside the rock's hitbox, enforce collision
+                    if (distance < minDistance) {
+                        let overlap = minDistance - distance;
+                        let correction = p5.Vector.sub(penguinCenter, rockCenter);
+                        correction.setMag(overlap + 1); // Add a small buffer to fully resolve overlap
+                        this.position.add(correction);
+
+                        // Redirect velocity completely away from the rock
+                        let bounce = p5.Vector.sub(penguinCenter, rockCenter).normalize();
+                        this.velocity = bounce.mult(this.maxSpeed * random()); // Apply bounce with a dampening factor
+                    }          
+                    /*
+                        Deleted code here that was supposed to steer penguin away from rock before collision but
+                        problem was that this code is only accessed after collision occurs
+                    */           
+                }
 
                 run(){    
                     if (this.cur_action == 'idle'){
@@ -536,11 +562,11 @@
                 update(){
                     return;
                 }
-
+                avoidRocks(){
+                    return
+                }
                 run(){
-                    super.run()
-
-                    
+                    super.run() 
                 }
             }
             
@@ -560,43 +586,6 @@
 
                     return dirs[i]
                 }
-                
-
-                run(){
-                    super.run();
-                }
-
-                avoidRocks(rock) {
-                    const rockCenter = createVector(rock.position.x + rock.cur_frame_w / 2, rock.position.y + rock.cur_frame_h / 2);
-                    const penguinCenter = createVector(this.position.x + this.cur_frame_w / 2, this.position.y + this.cur_frame_h / 2);
-
-                    const distance = p5.Vector.dist(penguinCenter, rockCenter);
-                    const minDistance = (Math.min(this.cur_frame_w, this.cur_frame_h) + Math.min(rock.cur_frame_w, rock.cur_frame_h)) / 2;
-
-                    // If penguin is inside the rock's hitbox, enforce collision
-                    if (distance < minDistance) {
-                        let overlap = minDistance - distance;
-                        let correction = p5.Vector.sub(penguinCenter, rockCenter);
-                        correction.setMag(overlap + 1); // Add a small buffer to fully resolve overlap
-                        this.position.add(correction);
-
-                        // Redirect velocity completely away from the rock
-                        let bounce = p5.Vector.sub(penguinCenter, rockCenter).normalize();
-                        this.velocity = bounce.mult(this.maxSpeed * random()); // Apply bounce with a dampening factor
-
-                        //Penguins ceases to exist if it collides with a dog
-                        if(rock instanceof Predator){
-                            let i = mysprites.indexOf(this) //finding index of penguin to delete it from mySprites
-                            mysprites.splice(i, 1)
-                        }
-                    } 
-                    /*
-                    Deleted code here that was supposed to steer penguin away from rock before collision but
-                     problem was that this code is only accessed after collision occurs
-                    */
-                    
-                }
-
 
                 on_bound_hit_north(){
                     super.on_bound_hit_north();
@@ -621,19 +610,58 @@
 
             }
 
-            //Class is similar to Bouncy but without the avoid rocks method
-            class Predator extends Bouncy{
+            /*
+            Class is similar to Bouncy but implements eatPenguin(). The only reason it doesn't extend
+            Bouncy is because it causes some problems when trying to eat a penguin with current implementation
+            */
+            class Predator extends Sprite{
                 constructor(jsonfile, x, y, sprite_name){
                     super(jsonfile, x, y, sprite_name);
-                    var direction = this.getDirection();
                     this.scale = 2.5
+                    var direction = this.getDirection();
                     this.set_direction(direction)
                 }
                 
-                avoidRocks(){
-                    return 
+                getDirection(){
+                    let dirs=  ['North', 'South', 'West', 'East', 'SEast', 'NEast', 'SWest', 'NWest'];
+                    let i = Math.floor(Math.random() * dirs.length);
+
+                    return dirs[i]
                 }
+                on_sprite_collision(sprite){
+                    if(sprite instanceof Bouncy) {
+                        this.eatPenguins(sprite);    
+                    }
+                    super.on_sprite_collision(sprite);
+                }
+
+                eatPenguins(penguin){
+                    let i = mysprites.indexOf(penguin) //finding index of penguin to delete from mySprites
+                    mysprites.splice(i, 1)
+                }
+
+                on_bound_hit_north(){
+                    super.on_bound_hit_north();
+                    this.set_direction(this.getDirection());
+                    
+                }
+                on_bound_hit_south(){
+                    super.on_bound_hit_south();
+                    this.set_direction(this.getDirection());
+
+                }
+                on_bound_hit_east(){
+                    super.on_bound_hit_east();
+                    this.set_direction(this.getDirection());
+                    
+                }
+                on_bound_hit_west(){
+                    super.on_bound_hit_west();
+                    this.set_direction(this.getDirection());
+                    
+                } 
             }
+            
 
             var do_i_need_to_redraw = true;
             var background_img = null;
@@ -687,13 +715,12 @@
             north_background_img.src = "imgs/north.png"  
 
             //mysprites.push( new Key_Control_Sprite("imgs/Penguins/animationData.json", 300, 300, 'TenderBud'));  
-            for(i = 1; i < 30; i++){
+            for(i = 1; i < 10; i++){
                 mysprites.push( new Bouncy("imgs/Penguins/animationData.json", random(window.innerWidth), 
                     random(window.innerHeight), 'TenderBud', i));
             }
            
-            mysprites.push( new Predator("imgs/Dog/animationData.json", random(window.innerWidth), 
-                random(window.innerHeight), 'NotSoTenderBud'));    
+            mysprites.push( new Predator("imgs/Dog/animationData.json", random(window.innerWidth), random(window.innerHeight), 'NotSoTenderBud'));    
             mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
             mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
 
