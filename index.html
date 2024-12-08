@@ -72,7 +72,7 @@
                     this.last_action = 'idle'
                     this.sprite_data = []
                     
-                    this.scale = 0.5;
+                    this.scale = 0.3;
                     this.acceleration =createVector() 
                     
                     this.clipboard = null;
@@ -115,19 +115,19 @@
                     var c = document.getElementById("main_canvas");
                     var ctx = c.getContext("2d");
             
+                   
                     try {
-                        ctx.putImageData(this.clipboard, this.position.x - this.velocity.x ,
-                            this.position.y - this.velocity.y);
-                    }catch(error){
+                        ctx.putImageData(this.clipboard, this.x_location - this.acceleration[0] ,
+                            this.y_location - this.acceleration[1]);
+                    }catch(error){                        
                     }
-            
                     try{
-                        this.clipboard = ctx.getImageData(this.position.x, this.position.y,
+                        this.clipboard = ctx.getImageData(this.x_location, this.y_location,
                             (action["meta"][frame]['w'] + 1)  * this.scale, (action["meta"][frame]['h'] +1) * this.scale);
-                    }catch(error){
+                        
+                        }catch(error){
                             console.log(error)
                     }
-            
                     try {
                         ctx.drawImage(action["imgs"][frame], this.position.x, this.position.y, 
                             action["meta"][frame]['w'] * this.scale, action["meta"][frame]['h'] * this.scale);
@@ -184,7 +184,8 @@
                 on_bound_hit_north(){
                     this.velocity.y = this.velocity.y * -1; 
                     this.position.y = 1; //update position so penguins don't get stuck on bounds
-                }
+                  
+               }
             
                 on_bound_hit_south(){
                     this.velocity.y= this.velocity.y * -1;
@@ -256,8 +257,7 @@
                     }else
                     if(this.velocity.x < 0 && this.velocity.y < 0){
                         direction = 'NWest'
-                    }else
-                    
+                    }else             
                     if(direction == 'East' && this.cur_action != 'walk_E'){
                         this.set_action('walk_E')
                     }
@@ -299,7 +299,7 @@
 
                 on_sprite_collision(sprite){
                     
-                    if(sprite instanceof Rock) {
+                    if(sprite instanceof Rock || sprite instanceof Predator) {
                         this.avoidRocks(sprite); 
                     }
                 
@@ -319,7 +319,7 @@
                     for( var i = 0 ; i < num_of_sprites; i++){
         
                         //This if basically means every other sprite but this one
-                        if(mysprites[i] != this){                
+                        if(mysprites[i] && [i] != this){                
 
                             //indexed_sprite_center_x = position.x + half_sprite_width
                             //indexed_sprite_center_y = position.y + half_sprite_height
@@ -328,9 +328,9 @@
 
                             //if (indexed_adjusted_x - adjusted_sprite_x)^2 + (indexed_adjusted_y - adjusted_sprite_y)^2 <= radius
                             //TL;DR radius length should not be equal to or less than distance from center of 1 sprite to center of another sprite
-                            if((Math.sqrt( ((i_center_x - center_x) ** 2) + ((i_center_y - center_y) **2) )) <= radius){
+                            if((Math.sqrt( ((i_center_x - center_x) ** 2) + ((i_center_y - center_y) **2) )) <= radius)
                                 this.on_sprite_collision(mysprites[i])
-                            }
+                            
                         }
                     }
                 }
@@ -502,6 +502,7 @@
             
                     if(this.position.y <= 0){
                         this.on_bound_hit_north()
+                        
                     }
 
                     try{
@@ -529,7 +530,7 @@
             class Rock extends Sprite{
                 constructor(jsonfile, x, y, sprite_name){
                     super(jsonfile, x, y, sprite_name);
-                    this.scale = 1.0;
+                    this.scale = .6;
                 }
                 
                 update(){
@@ -537,17 +538,19 @@
                 }
 
                 run(){
-                    this.draw_or_load_the_damn_thing();
+                    super.run()
 
                     
                 }
             }
             
+            
+
             class Bouncy extends Sprite{
-                constructor(jsonfile, x, y, sprite_name){
+                constructor(jsonfile, x, y, sprite_name, i){
                     super(jsonfile, x, y, sprite_name);
                     var direction = this.getDirection();
-
+                    this.index = i;
                     this.set_direction(direction)
                 }
 
@@ -560,7 +563,7 @@
                 
 
                 run(){
-                super.run();
+                    super.run();
                 }
 
                 avoidRocks(rock) {
@@ -579,14 +582,19 @@
 
                         // Redirect velocity completely away from the rock
                         let bounce = p5.Vector.sub(penguinCenter, rockCenter).normalize();
-                        this.velocity = bounce.mult(this.maxSpeed * 0.7); // Apply bounce with a dampening factor
-                    } else if (distance < minDistance + 100) {
-                        // Gradual steering when approaching rock
-                        let diff = p5.Vector.sub(penguinCenter, rockCenter);
-                        let steerStrength = map(distance, minDistance, minDistance + 100, this.maxForce, 0);
-                        diff.setMag(steerStrength);
-                        this.acceleration.add(diff);
-                    }
+                        this.velocity = bounce.mult(this.maxSpeed * random()); // Apply bounce with a dampening factor
+
+                        //Penguins ceases to exist if it collides with a dog
+                        if(rock instanceof Predator){
+                            let i = mysprites.indexOf(this) //finding index of penguin to delete it from mySprites
+                            mysprites.splice(i, 1)
+                        }
+                    } 
+                    /*
+                    Deleted code here that was supposed to steer penguin away from rock before collision but
+                     problem was that this code is only accessed after collision occurs
+                    */
+                    
                 }
 
 
@@ -613,6 +621,20 @@
 
             }
 
+            //Class is similar to Bouncy but without the avoid rocks method
+            class Predator extends Bouncy{
+                constructor(jsonfile, x, y, sprite_name){
+                    super(jsonfile, x, y, sprite_name);
+                    var direction = this.getDirection();
+                    this.scale = 2.5
+                    this.set_direction(direction)
+                }
+                
+                avoidRocks(){
+                    return 
+                }
+            }
+
             var do_i_need_to_redraw = true;
             var background_img = null;
 
@@ -621,7 +643,6 @@
                     var c = document.getElementById("main_canvas");
                     var ctx = c.getContext("2d");
                     ctx.drawImage(background_img, 0, 0, window.innerWidth, window.innerHeight);
-                    
                     var num_of_sprites = mysprites.length;
                     for( i = 0 ; i< num_of_sprites; i++){
                         mysprites[i].clipboard = null;
@@ -637,7 +658,10 @@
                 redraw_background();
                     var num_of_sprites = mysprites.length;
                     for( i = 0 ; i< num_of_sprites; i++){
-                        mysprites[i].run();
+                        if(mysprites[i]){
+                            mysprites[i].run();
+                        }
+
                     }
                     last_run_loop = cur_time;
                 }
@@ -645,7 +669,7 @@
             }
             
             
-            var mysprites = [];
+            let mysprites = [];
             var last_run_loop;
 
             var north_background_img = null;
@@ -662,15 +686,19 @@
             north_background_img = new Image();
             north_background_img.src = "imgs/north.png"  
 
-            // mysprites.push( new Key_Control_Sprite("imgs/Penguins/animationData.json", 300, 300, 'TenderBud'));
-                for(i = 0; i < 30; ++i){
-
+            //mysprites.push( new Key_Control_Sprite("imgs/Penguins/animationData.json", 300, 300, 'TenderBud'));  
+            for(i = 1; i < 30; i++){
                 mysprites.push( new Bouncy("imgs/Penguins/animationData.json", random(window.innerWidth), 
-                    random(window.innerHeight), 'TenderBud'));
-                }
-                mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
-                mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
-                console.log("Rock info: " + mysprites[30].position.x + ", " + mysprites[30].position.y + ", Name: " + mysprites[30].sprite_name + ", cur Action: " + mysprites[30].cur_action + ", last Action: " + mysprites[30].last_action);
+                    random(window.innerHeight), 'TenderBud', i));
+            }
+           
+            mysprites.push( new Predator("imgs/Dog/animationData.json", random(window.innerWidth), 
+                random(window.innerHeight), 'NotSoTenderBud'));    
+            mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
+            mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
+
+               
+                //  console.log("Rock info: " + mysprites[30].position.x + ", " + mysprites[30].position.y + ", Name: " + mysprites[30].sprite_name + ", cur Action: " + mysprites[30].cur_action + ", last Action: " + mysprites[30].last_action);
                 last_run_loop = Date.now();
                 requestAnimationFrame(run_loop);
 
