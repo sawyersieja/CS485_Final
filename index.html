@@ -115,23 +115,7 @@
                     var c = document.getElementById("main_canvas");
                     var ctx = c.getContext("2d");
             
-                /*   For some reason code works without this and it even gets rid of glitches when
-                     hitting bound of screen
-
-                    try {
-                        ctx.putImageData(this.clipboard, this.position.x - this.acceleration[0] ,
-                            this.position.y - this.acceleration[1]);
-                    }catch(error){                        
-                    }
-                    try{
-                        console.log(this.x_location, " ", this.y_location, " ",(action["meta"][frame]['w'] + 1)  * this.scale ," ",(action["meta"][frame]['h'] +1) * this.scale)
-                        this.clipboard = ctx.getImageData(this.position.x, this.position.y, 
-                            (action["meta"][frame]['w'] + 1)  * this.scale, (action["meta"][frame]['h'] +1) * this.scale);
-                        
-                        }catch(error){
-                            console.log(error)
-                    }
-                */            
+                      
                     try {
                         ctx.drawImage(action["imgs"][frame], this.position.x, this.position.y, 
                             action["meta"][frame]['w'] * this.scale, action["meta"][frame]['h'] * this.scale);
@@ -539,6 +523,7 @@
                 }
             }
             
+            //this class is not used.
             class Key_Control_Sprite extends Sprite{
                 run(){
                     this.set_direction(current_state);         
@@ -553,6 +538,7 @@
 
             }
 
+            //Rock is just a Sprite that acts as an obstacle similar to bounds.
             class Rock extends Sprite{
                 constructor(jsonfile, x, y, sprite_name){
                     super(jsonfile, x, y, sprite_name);
@@ -571,7 +557,7 @@
             }
             
             
-
+            //Bouncy is for the penguins.
             class Bouncy extends Sprite{
                 constructor(jsonfile, x, y, sprite_name, i){
                     super(jsonfile, x, y, sprite_name);
@@ -603,14 +589,14 @@
                     
                     const distance = p5.Vector.dist(penguinCenter, predatorCenter);
 
-                    // Check if the predator is within the perception radius
+                    //If dog observed
                     if (distance < this.perceptionRadius) {
-                        let fleeForce = p5.Vector.sub(penguinCenter, predatorCenter); // Move away from the predator
+                        let fleeForce = p5.Vector.sub(penguinCenter, predatorCenter); // Prepare to flee
                         fleeForce.setMag(this.maxSpeed); // Set speed for fleeing
                         fleeForce.sub(this.velocity); // Adjust based on current velocity
                         fleeForce.limit(this.maxForce); // Limit the fleeing force to prevent erratic behavior
 
-                        this.acceleration.add(fleeForce); // Apply the fleeing force
+                        this.acceleration.add(fleeForce); // Run awayyyyyyyyyy
                     }
                 }
 
@@ -676,7 +662,6 @@
 
                     var timeSinceLastEat = Date.now() - this.sinceLastEaten;
 
-                    // Check if cooldown has passed
                     if (this.cooldown && Date.now() - this.lastEatTime >= this.cooldownTimer) {
                         this.cooldown = false; // Reset cooldown
 
@@ -731,18 +716,6 @@
                         this.munchSound.play();
                         this.cooldown = true;
                         this.lastEatTime = Date.now();
-
-                        /*
-                            These 3 lines make the dog stop after eating a penguin. 
-                            It will start moving again if it senses a penguin nearby but usually penguins come to dog
-                            It looks like dog is barking to penguins to come to be eaten. 
-                            Could use some improvement since dog doesn't move as fast after.
-                        */
-                       /*
-                        this.velocity.x  = 0;
-                        this.velocity.y = 0
-                        this.direction = 'Idle'
-                        */
                     }          
                 }
 
@@ -768,7 +741,6 @@
                 } 
             }
             
-
             var do_i_need_to_redraw = true;
             var background_img = null;
 
@@ -831,9 +803,7 @@
             for(i = 0; i < 5; i++){
                 mysprites.push(new Rock("imgs/rocks/animationData.json", random(window.innerWidth), random(window.innerHeight), 'Boulder'));
             }
-                
                
-                //  console.log("Rock info: " + mysprites[30].position.x + ", " + mysprites[30].position.y + ", Name: " + mysprites[30].sprite_name + ", cur Action: " + mysprites[30].cur_action + ", last Action: " + mysprites[30].last_action);
                 last_run_loop = Date.now();
                 requestAnimationFrame(run_loop);
 
