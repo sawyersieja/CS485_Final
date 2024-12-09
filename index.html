@@ -577,6 +577,7 @@
                     super(jsonfile, x, y, sprite_name);
                     var direction = this.getDirection();
                     this.index = i;
+                    this.perceptionRadius = 300;
                     this.set_direction(direction)
                 }
 
@@ -585,6 +586,49 @@
                     let i = Math.floor(Math.random() * dirs.length);
 
                     return dirs[i]
+                }
+
+                avoidPredator(predator){
+        
+                    const penguinCenter = createVector(
+                        this.position.x + this.cur_frame_w / 2,
+                        this.position.y + this.cur_frame_h / 2
+                    );
+
+                    const predatorCenter = createVector(
+                    predator.position.x + predator.cur_frame_w / 2,
+                    predator.position.y + predator.cur_frame_h / 2
+                    );
+
+                    
+                    const distance = p5.Vector.dist(penguinCenter, predatorCenter);
+
+                    // Check if the predator is within the perception radius
+                    if (distance < this.perceptionRadius) {
+                        let fleeForce = p5.Vector.sub(penguinCenter, predatorCenter); // Move away from the predator
+                        fleeForce.setMag(this.maxSpeed); // Set speed for fleeing
+                        fleeForce.sub(this.velocity); // Adjust based on current velocity
+                        fleeForce.limit(this.maxForce); // Limit the fleeing force to prevent erratic behavior
+
+                        this.acceleration.add(fleeForce); // Apply the fleeing force
+                    }
+                }
+
+                update() {
+                    // Get the predator from the sprite list
+                    let predator = mysprites.find((sprite) => sprite instanceof Predator);
+
+                    // If a predator exists, avoid it
+                    if (predator) {
+                        this.avoidPredator(predator);
+                    }
+
+                    this.set_direction_by_vel();
+                    this.position.add(this.velocity);
+                    this.velocity.add(this.acceleration);
+                    this.velocity.limit(this.maxSpeed);
+                    this.acceleration.mult(0);
+
                 }
 
                 on_bound_hit_north(){
@@ -623,13 +667,27 @@
                     this.cooldown = false;
                     this.cooldownTimer = 2000;
                     this.sinceLastEaten = 0;
+                    this.barkedAfterCooldown = false;
                     this.munchSound = new Audio("sounds/munch.mp3");
+                    this.barkSound = new Audio("sounds/bark.mp3");
                 }
 
                 update(){
+
+                    var timeSinceLastEat = Date.now() - this.sinceLastEaten;
+
                     // Check if cooldown has passed
                     if (this.cooldown && Date.now() - this.lastEatTime >= this.cooldownTimer) {
                         this.cooldown = false; // Reset cooldown
+
+                        if(!this.barkedAfterCooldown){
+                            this.barkSound.play();
+                            this.barkedAfterCooldown = true;
+                        }
+                    }
+
+                    if(!this.cooldown){
+                        this.barkedAfterCooldown = false;
                     }
 
                     this.set_direction_by_vel();
