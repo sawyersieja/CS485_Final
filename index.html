@@ -653,7 +653,6 @@
                 on_sprite_collision(sprite){
                     if(sprite instanceof Bouncy) {
                         if(!this.cooldown) {
-                            this.munchSound.play();
                             this.eatPenguins(sprite);
                         } 
                     }
@@ -671,6 +670,7 @@
                         let i = mysprites.indexOf(penguin) //finding index of penguin to delete from mySprites
                         mysprites.splice(i, 1)
                         
+                        this.munchSound.play();
                         this.cooldown = true;
                         this.lastEatTime = Date.now();
 
