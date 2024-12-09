@@ -620,6 +620,28 @@
                     this.scale = 2.5
                     var direction = this.getDirection();
                     this.set_direction(direction)
+                    this.cooldown = false;
+                    this.cooldownTimer = 2000;
+                    this.sinceLastEaten = 0;
+                    this.munchSound = new Audio("sounds/munch.mp3");
+                }
+
+                update(){
+                    // Check if cooldown has passed
+                    if (this.cooldown && Date.now() - this.lastEatTime >= this.cooldownTimer) {
+                        this.cooldown = false; // Reset cooldown
+                    }
+
+                    this.set_direction_by_vel();
+                    for (let sprite of mysprites) {
+                        if (sprite instanceof Rock && this.isOverlapping(sprite)) {
+                            this.avoidRocks(sprite);
+                        }
+                    }
+                    this.position.add(this.velocity);
+                    this.velocity.add(this.acceleration);
+                    this.velocity.limit(this.maxSpeed);
+                    this.acceleration.mult(0);
                 }
                 
                 getDirection(){
@@ -630,7 +652,10 @@
                 }
                 on_sprite_collision(sprite){
                     if(sprite instanceof Bouncy) {
-                        this.eatPenguins(sprite); 
+                        if(!this.cooldown) {
+                            this.munchSound.play();
+                            this.eatPenguins(sprite);
+                        } 
                     }
                     super.on_sprite_collision(sprite);
                 }
@@ -641,20 +666,25 @@
                     const distance = p5.Vector.dist(predCenter, penguinCenter);
                     const minDistance = (Math.min(this.cur_frame_w, this.cur_frame_h) + Math.min(penguin.cur_frame_w, penguin.cur_frame_h)) / 2;
 
-                    // If penguin is inside the rock's hitbox, enforce collision
+                    // If penguin is inside the predator's hitbox, enforce collision
                     if (distance < minDistance) {
                         let i = mysprites.indexOf(penguin) //finding index of penguin to delete from mySprites
                         mysprites.splice(i, 1)
                         
+                        this.cooldown = true;
+                        this.lastEatTime = Date.now();
+
                         /*
                             These 3 lines make the dog stop after eating a penguin. 
                             It will start moving again if it senses a penguin nearby but usually penguins come to dog
                             It looks like dog is barking to penguins to come to be eaten. 
                             Could use some improvement since dog doesn't move as fast after.
                         */
+                       /*
                         this.velocity.x  = 0;
                         this.velocity.y = 0
                         this.direction = 'Idle'
+                        */
                     }          
                 }
 
